@@ -1,0 +1,74 @@
+﻿@model List<string>
+
+@{
+    ViewBag.Title = "Contracts Management";
+}
+
+<div class="container">
+    <h2 class="my-4 text-center">Contracts Management</h2>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Upload New Contract</h5>
+            <form asp-action="Upload" method="post" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="formFile" class="form-label">Select File:</label>
+                    <input type="file" name="formFile" class="form-control" required />
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> Upload
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Uploaded Contracts</h5>
+        </div>
+        <div class="card-body">
+            @if (Model != null && Model.Count > 0)
+            {
+                <table class="table table-hover table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Contract Name</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var file in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <i class="fas fa-file-contract text-secondary"></i> @System.IO.Path.GetFileName(file)
+                                </td>
+                                <td class="text-center">
+                                    <!-- Delete button with tooltip -->
+                                    <a href="@Url.Action("Delete", "FileStorage", new { fileName = System.IO.Path.GetFileName(file) })" class="btn btn-outline-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete Contract">
+                                        <i class="fas fa-trash-alt"></i> Delete
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="alert alert-info text-center">No contracts uploaded yet.</div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js" crossorigin="anonymous"></script>
+
+    <script>
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    </script>
+}

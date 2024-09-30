@@ -1,0 +1,55 @@
+﻿@model ST10339549_CLDV6212_POE.Models.Product
+
+@{
+    ViewBag.Title = "Delete Product";
+}
+
+<div class="container mt-5">
+    <div class="card shadow-lg border-0">
+        <div class="card-header bg-danger text-white">
+            <h2 class="mb-0">Delete Product</h2>
+        </div>
+        <div class="card-body">
+            <h4 class="text-center text-danger mb-4">Are you sure you want to delete this product?</h4>
+
+            <div class="table-responsive">
+                <table class="table table-borderless">
+                    <tbody>
+                        <tr>
+                            <th class="w-25">Product ID:</th>
+                            <td>@Model.ProductId</td>
+                        </tr>
+                        <tr>
+                            <th class="w-25">Product Name:</th>
+                            <td>@Model.ProductName</td>
+                        </tr>
+                        <tr>
+                            <th>Product Description:</th>
+                            <td>@Model.ProductDescription</td>
+                        </tr>
+                        <tr>
+                            <th>Product Price:</th>
+                            <td>@Model.ProductPrice.ToString("C")</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex justify-content-center mt-4">
+                <form asp-action="Delete" method="post">
+                    <input type="hidden" asp-for="RowKey" />
+                    <button type="submit" class="btn btn-danger me-3">
+                        <i class="fas fa-trash-alt"></i> Confirm Delete
+                    </button>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js" crossorigin="anonymous"></script>
+}

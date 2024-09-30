@@ -1,0 +1,54 @@
+﻿@model ST10339549_CLDV6212_POE.Models.Customer
+
+@{
+    ViewBag.Title = "Edit Customer";
+}
+
+<div class="container">
+    <h2 class="my-4 text-center">Edit Customer</h2>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form asp-action="Edit" method="post">
+                <input type="hidden" asp-for="RowKey" />
+                <div class="form-group mb-3">
+                    <label for="CustomerID" class="form-label">Customer ID</label>
+                    <input type="text" asp-for="CustomerId" class="form-control" placeholder="" required />
+                </div>
+
+                <div class="form-group mb-3">
+                    <label for="CustomerName" class="form-label">Customer Name</label>
+                    <input type="text" asp-for="CustomerName" class="form-control" placeholder="Enter customer name" required />
+                </div>
+
+                <div class="form-group mb-3">
+                    <label for="CustomerSurname" class="form-label">Customer Surname</label>
+                    <input type="text" asp-for="CustomerSurname" class="form-control" placeholder="Enter customer surname" required />
+                </div>
+
+                <div class="form-group mb-3">
+                    <label for="CustomerEmail" class="form-label">Customer Email</label>
+                    <input type="email" asp-for="CustomerEmail" class="form-control" placeholder="Enter customer email" required />
+                </div>
+
+                <div class="form-group mb-3">
+                    <label for="CustomerAddress" class="form-label">Customer Address</label>
+                    <input type="text" asp-for="CustomerAddress" class="form-control" placeholder="Enter customer address" required />
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js" crossorigin="anonymous"></script>
+}

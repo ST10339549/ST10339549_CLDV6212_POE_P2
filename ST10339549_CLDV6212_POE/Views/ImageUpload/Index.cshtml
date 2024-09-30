@@ -1,0 +1,68 @@
+﻿@model List<string>
+
+@{
+    ViewBag.Title = "Image Upload";
+}
+
+<div class="container">
+    <h2 class="my-4 text-center">Image Upload and Display</h2>
+
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-success text-center">@TempData["Message"]</div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger text-center">@TempData["Error"]</div>
+    }
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Upload New Image</h5>
+            <form asp-action="Upload" method="post" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="image" class="form-label">Select Image:</label>
+                    <input type="file" name="image" class="form-control" required />
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-upload"></i> Upload</button>
+            </form>
+        </div>
+    </div>
+
+    <h3 class="my-4 text-center">Uploaded Images</h3>
+
+    @if (Model != null && Model.Count > 0)
+    {
+        <div class="row">
+            @foreach (var imageUrl in Model)
+            {
+                <div class="col-md-3 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <img src="@imageUrl" class="card-img-top" alt="Uploaded Image" />
+                        <div class="card-body text-center">
+                            <a href="@imageUrl" class="btn btn-outline-primary btn-sm" target="_blank" data-bs-toggle="tooltip" data-bs-placement="top" title="View Full Image">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info text-center">No images uploaded yet.</div>
+    }
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js" crossorigin="anonymous"></script>
+
+    <script>
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    </script>
+}

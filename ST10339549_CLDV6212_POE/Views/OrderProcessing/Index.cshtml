@@ -1,0 +1,78 @@
+﻿@model List<ST10339549_CLDV6212_POE.Models.OrderMessage>
+
+@{
+    ViewBag.Title = "Order Processing";
+}
+
+<div class="container">
+    <h2 class="my-4 text-center">Order Processing</h2>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Add New Order</h5>
+        </div>
+        <div class="card-body">
+            <form asp-action="OrderProcessing" method="post">
+                <div class="form-group">
+                    <label for="orderId" class="form-label">Order ID:</label>
+                    <input type="text" name="orderId" id="orderId" class="form-control" placeholder="Enter order ID" required />
+                </div>
+                <div class="form-group mt-3">
+                    <label for="productId" class="form-label">Product ID:</label>
+                    <input type="text" name="productId" id="productId" class="form-control" placeholder="Enter product ID" required />
+                </div>
+                <div class="form-group mt-3">
+                    <label for="quantity" class="form-label">Quantity:</label>
+                    <input type="number" name="quantity" id="quantity" class="form-control" placeholder="Enter quantity" required />
+                </div>
+                <button type="submit" class="btn btn-success mt-4"><i class="fas fa-plus-circle"></i> Add Order</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">Order Queue</h5>
+        </div>
+        <div class="card-body">
+            @if (Model != null && Model.Count > 0)
+            {
+                <table class="table table-hover table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Product ID</th>
+                            <th>Quantity</th>
+                            <th>Action</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var message in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="badge bg-primary text-white">@message.OrderId</span>
+                                </td>
+                                <td>@message.ProductId</td>
+                                <td>@message.Quantity</td>
+                                <td>
+                                    <span class="badge bg-info text-white">@message.Action</span>
+                                </td>
+                                <td>@message.Timestamp</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="alert alert-info text-center">No orders found in the queue.</div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js" crossorigin="anonymous"></script>
+}
