@@ -15,7 +15,7 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
     public static class AddOrderMessageFunction
     {
         // Define the function name as AddOrderMessage
-        [FunctionName("AddOrderMessage")]
+        [FunctionName("OrderQueueFunction")]
         public static async Task<IActionResult> AddOrderMessage(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = "add-order-message")] HttpRequest req,
             ILogger log)
