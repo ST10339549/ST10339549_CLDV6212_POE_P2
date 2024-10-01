@@ -57,7 +57,7 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
             }
         }
 
-        [FunctionName("GetOrderMessages")]
+        [FunctionName("GetOrderMessagesFunction")]
         public static async Task<IActionResult> GetOrderMessages(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "get-order-messages")] HttpRequest req,
             ILogger log)
