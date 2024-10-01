@@ -1,4 +1,4 @@
-using Azure.Storage.Queues; // Required for working with Azure Storage Queues
+using Azure.Storage.Queues;
 using Azure.Storage.Queues.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -6,7 +6,7 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using ST10339549_CLDV6212_POE.Models; // Assuming this is where your OrderMessage model is
+using ST10339549_CLDV6212_POE.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -16,7 +16,6 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
 {
     public static class AddOrderMessageFunction
     {
-        // Define the function name as AddOrderMessage
         [FunctionName("OrderQueueFunction")]
         public static async Task<IActionResult> AddOrderMessage(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = "add-order-message")] HttpRequest req,
@@ -24,7 +23,6 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
         {
             log.LogInformation("AddOrderMessage function triggered.");
 
-            // Parse the incoming order message from the request body
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             var orderMessage = JsonConvert.DeserializeObject<OrderMessage>(requestBody);
 
@@ -36,14 +34,11 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
 
             try
             {
-                // Connect to Azure Queue Storage
                 string connectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage");
                 QueueClient queueClient = new QueueClient(connectionString, "orders");
 
-                // Ensure the queue exists
                 await queueClient.CreateIfNotExistsAsync();
 
-                // Serialize the order message to JSON and add it to the queue
                 string orderMessageJson = JsonConvert.SerializeObject(orderMessage);
                 await queueClient.SendMessageAsync(orderMessageJson);
 
@@ -66,28 +61,23 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
 
             try
             {
-                // Connect to Azure Queue Storage
                 string connectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage");
                 QueueClient queueClient = new QueueClient(connectionString, "orders");
 
-                // Ensure the queue exists
                 if (!await queueClient.ExistsAsync())
                 {
                     return new NotFoundObjectResult("Queue not found.");
                 }
 
-                // Retrieve messages from the queue
                 QueueMessage[] retrievedMessages = await queueClient.ReceiveMessagesAsync(maxMessages: 10);
 
                 var orderMessages = new List<OrderMessage>();
 
-                // Loop through the messages, deserialize, and add to list
                 foreach (var message in retrievedMessages)
                 {
                     var orderMessage = JsonConvert.DeserializeObject<OrderMessage>(message.MessageText);
                     orderMessages.Add(orderMessage);
 
-                    // Delete the message after processing
                     await queueClient.DeleteMessageAsync(message.MessageId, message.PopReceipt);
                 }
 

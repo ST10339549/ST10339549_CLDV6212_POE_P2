@@ -44,7 +44,6 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
             }
         }
 
-        // CREATE customer (POST)
         private static async Task<IActionResult> CreateCustomer(HttpRequest req, CloudTable customerTable, ILogger log)
         {
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
@@ -68,12 +67,10 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
             return new OkObjectResult($"Customer '{customer.CustomerName}' stored successfully.");
         }
 
-        // GET customer by PartitionKey and RowKey or all in Partition (GET)
         private static async Task<IActionResult> GetCustomer(string partitionKey, string rowKey, CloudTable customerTable, ILogger log)
         {
             if (!string.IsNullOrEmpty(rowKey))
             {
-                // Retrieve single customer
                 TableOperation retrieveOperation = TableOperation.Retrieve<Customer>(partitionKey, rowKey);
                 TableResult result = await customerTable.ExecuteAsync(retrieveOperation);
                 Customer customer = result.Result as Customer;
@@ -87,7 +84,6 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
             }
             else if (!string.IsNullOrEmpty(partitionKey))
             {
-                // Retrieve all customers in the partition
                 TableQuery<Customer> query = new TableQuery<Customer>().Where(
                     TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, partitionKey));
                 var customers = await customerTable.ExecuteQuerySegmentedAsync(query, null);
@@ -99,7 +95,6 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
             }
         }
 
-        // UPDATE customer (PUT)
         private static async Task<IActionResult> UpdateCustomer(HttpRequest req, string partitionKey, string rowKey, CloudTable customerTable, ILogger log)
         {
             if (string.IsNullOrEmpty(partitionKey) || string.IsNullOrEmpty(rowKey))
@@ -115,7 +110,6 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
                 return new BadRequestObjectResult("Invalid customer data.");
             }
 
-            // Retrieve existing customer
             TableOperation retrieveOperation = TableOperation.Retrieve<Customer>(partitionKey, rowKey);
             TableResult result = await customerTable.ExecuteAsync(retrieveOperation);
             var existingCustomer = result.Result as Customer;
@@ -125,7 +119,6 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
                 return new NotFoundObjectResult($"Customer with PartitionKey '{partitionKey}' and RowKey '{rowKey}' not found.");
             }
 
-            // Update customer data
             existingCustomer.CustomerName = updatedCustomer.CustomerName ?? existingCustomer.CustomerName;
             existingCustomer.CustomerSurname = updatedCustomer.CustomerSurname ?? existingCustomer.CustomerSurname;
             existingCustomer.CustomerEmail = updatedCustomer.CustomerEmail ?? existingCustomer.CustomerEmail;
@@ -138,7 +131,6 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
             return new OkObjectResult($"Customer '{existingCustomer.CustomerName}' updated successfully.");
         }
 
-        // DELETE customer (DELETE)
         private static async Task<IActionResult> DeleteCustomer(string partitionKey, string rowKey, CloudTable customerTable, ILogger log)
         {
             if (string.IsNullOrEmpty(partitionKey) || string.IsNullOrEmpty(rowKey))
@@ -146,7 +138,6 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
                 return new BadRequestObjectResult("PartitionKey and RowKey must be provided.");
             }
 
-            // Retrieve the customer
             TableOperation retrieveOperation = TableOperation.Retrieve<Customer>(partitionKey, rowKey);
             TableResult result = await customerTable.ExecuteAsync(retrieveOperation);
             var customerToDelete = result.Result as Customer;
@@ -156,7 +147,7 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
                 return new NotFoundObjectResult($"Customer with PartitionKey '{partitionKey}' and RowKey '{rowKey}' not found.");
             }
 
-            // Delete the customer
+
             TableOperation deleteOperation = TableOperation.Delete(customerToDelete);
             await customerTable.ExecuteAsync(deleteOperation);
 

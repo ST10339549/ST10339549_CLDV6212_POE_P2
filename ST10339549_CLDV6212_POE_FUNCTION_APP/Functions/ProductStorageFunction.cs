@@ -44,7 +44,6 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
             }
         }
 
-        // CREATE product (POST)
         private static async Task<IActionResult> CreateProduct(HttpRequest req, CloudTable productTable, ILogger log)
         {
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
@@ -74,12 +73,10 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
             return new OkObjectResult($"Product '{product.ProductName}' stored successfully.");
         }
 
-        // GET product by PartitionKey and RowKey or all in Partition (GET)
         private static async Task<IActionResult> GetProduct(string partitionKey, string rowKey, CloudTable productTable, ILogger log)
         {
             if (!string.IsNullOrEmpty(rowKey))
             {
-                // Retrieve single product
                 TableOperation retrieveOperation = TableOperation.Retrieve<Product>(partitionKey, rowKey);
                 TableResult result = await productTable.ExecuteAsync(retrieveOperation);
                 Product product = result.Result as Product;
@@ -93,7 +90,6 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
             }
             else if (!string.IsNullOrEmpty(partitionKey))
             {
-                // Retrieve all products in the partition
                 TableQuery<Product> query = new TableQuery<Product>().Where(
                     TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, partitionKey));
                 var products = await productTable.ExecuteQuerySegmentedAsync(query, null);
@@ -105,7 +101,6 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
             }
         }
 
-        // UPDATE product (PUT)
         private static async Task<IActionResult> UpdateProduct(HttpRequest req, string partitionKey, string rowKey, CloudTable productTable, ILogger log)
         {
             if (string.IsNullOrEmpty(partitionKey) || string.IsNullOrEmpty(rowKey))
@@ -121,7 +116,6 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
                 return new BadRequestObjectResult("Invalid product data.");
             }
 
-            // Retrieve existing product
             TableOperation retrieveOperation = TableOperation.Retrieve<Product>(partitionKey, rowKey);
             TableResult result = await productTable.ExecuteAsync(retrieveOperation);
             var existingProduct = result.Result as Product;
@@ -131,7 +125,6 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
                 return new NotFoundObjectResult($"Product with PartitionKey '{partitionKey}' and RowKey '{rowKey}' not found.");
             }
 
-            // Update product data
             existingProduct.ProductName = updatedProduct.ProductName ?? existingProduct.ProductName;
             existingProduct.ProductDescription = updatedProduct.ProductDescription ?? existingProduct.ProductDescription;
             existingProduct.ProductPrice = updatedProduct.ProductPrice != 0 ? updatedProduct.ProductPrice : existingProduct.ProductPrice;
@@ -143,7 +136,6 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
             return new OkObjectResult($"Product '{existingProduct.ProductName}' updated successfully.");
         }
 
-        // DELETE product (DELETE)
         private static async Task<IActionResult> DeleteProduct(string partitionKey, string rowKey, CloudTable productTable, ILogger log)
         {
             if (string.IsNullOrEmpty(partitionKey) || string.IsNullOrEmpty(rowKey))
@@ -151,7 +143,6 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
                 return new BadRequestObjectResult("PartitionKey and RowKey must be provided.");
             }
 
-            // Retrieve the product
             TableOperation retrieveOperation = TableOperation.Retrieve<Product>(partitionKey, rowKey);
             TableResult result = await productTable.ExecuteAsync(retrieveOperation);
             var productToDelete = result.Result as Product;
@@ -161,7 +152,6 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
                 return new NotFoundObjectResult($"Product with PartitionKey '{partitionKey}' and RowKey '{rowKey}' not found.");
             }
 
-            // Delete the product
             TableOperation deleteOperation = TableOperation.Delete(productToDelete);
             await productTable.ExecuteAsync(deleteOperation);
 
