@@ -6,16 +6,19 @@ namespace ST10339549_CLDV6212_POE.Controllers
     public class CustomerController : Controller
     {
         private readonly HttpClient _httpClient;
-        private readonly string _azureFunctionUrl = "https://st10339549-azurefunctionapplication.azurewebsites.net/";
+        private readonly string _azureFunctionUrl;
+        private readonly string _functionKey;
 
-        public CustomerController(HttpClient httpClient)
+        public CustomerController(HttpClient httpClient, IConfiguration configuration)
         {
             _httpClient = httpClient;
+            _azureFunctionUrl = configuration["AzureFunctionSettings:BaseUrl"];
+            _functionKey = configuration["AzureFunctionSettings:CustomerFunctionKey"];
         }
 
         public async Task<IActionResult> Index()
         {
-            var customers = await _httpClient.GetFromJsonAsync<List<Customer>>($"{_azureFunctionUrl}GetCustomers");
+            var customers = await _httpClient.GetFromJsonAsync<List<Customer>>($"{_azureFunctionUrl}api/customer/Customer?code={_functionKey}");
             return View(customers);
         }
 
@@ -27,7 +30,7 @@ namespace ST10339549_CLDV6212_POE.Controllers
         {
             if (ModelState.IsValid)
             {
-                var response = await _httpClient.PostAsJsonAsync($"{_azureFunctionUrl}CustomerStorageFunction", customer);
+                var response = await _httpClient.PostAsJsonAsync($"{_azureFunctionUrl}api/customer/Customer?code={_functionKey}", customer);
                 if (response.IsSuccessStatusCode)
                 {
                     return RedirectToAction(nameof(Index));
@@ -43,7 +46,7 @@ namespace ST10339549_CLDV6212_POE.Controllers
         [HttpGet]
         public async Task<IActionResult> Edit(string partitionKey, string rowKey)
         {
-            var customer = await _httpClient.GetFromJsonAsync<Customer>($"{_azureFunctionUrl}GetCustomer?partitionKey={partitionKey}&rowKey={rowKey}");
+            var customer = await _httpClient.GetFromJsonAsync<Customer>($"{_azureFunctionUrl}api/customer/{partitionKey}/{rowKey}?code={_functionKey}");
             return View(customer);
         }
 
@@ -52,7 +55,7 @@ namespace ST10339549_CLDV6212_POE.Controllers
         {
             if (ModelState.IsValid)
             {
-                var response = await _httpClient.PutAsJsonAsync($"{_azureFunctionUrl}UpdateCustomer", customer);
+                var response = await _httpClient.PutAsJsonAsync($"{_azureFunctionUrl}api/customer/{customer.PartitionKey}/{customer.RowKey}?code={_functionKey}", customer);
                 if (response.IsSuccessStatusCode)
                 {
                     return RedirectToAction(nameof(Index));
@@ -65,14 +68,14 @@ namespace ST10339549_CLDV6212_POE.Controllers
         [HttpGet]
         public async Task<IActionResult> Delete(string partitionKey, string rowKey)
         {
-            var customer = await _httpClient.GetFromJsonAsync<Customer>($"{_azureFunctionUrl}GetCustomer?partitionKey={partitionKey}&rowKey={rowKey}");
+            var customer = await _httpClient.GetFromJsonAsync<Customer>($"{_azureFunctionUrl}api/customer/{partitionKey}/{rowKey}?code={_functionKey}");
             return View(customer);
         }
 
         [HttpPost]
         public async Task<IActionResult> Delete(Customer customer)
         {
-            var response = await _httpClient.DeleteAsync($"{_azureFunctionUrl}DeleteCustomer?partitionKey={customer.PartitionKey}&rowKey={customer.RowKey}");
+            var response = await _httpClient.DeleteAsync($"{_azureFunctionUrl}api/customer/{customer.PartitionKey}/{customer.RowKey}?code={_functionKey}");
             if (response.IsSuccessStatusCode)
             {
                 return RedirectToAction(nameof(Index));

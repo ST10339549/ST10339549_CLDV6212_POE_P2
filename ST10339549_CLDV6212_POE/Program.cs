@@ -5,6 +5,7 @@ builder.Services.AddControllersWithViews();
 
 // Register the HTTPClient for Dependency Injection
 builder.Services.AddHttpClient();
+builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
 var app = builder.Build();
 

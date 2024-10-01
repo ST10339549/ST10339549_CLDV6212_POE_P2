@@ -16,7 +16,7 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
     {
         [FunctionName("CustomerStorageFunction")]
         public static async Task<IActionResult> Run(
-        [HttpTrigger(AuthorizationLevel.Function, "post", "put", "delete", "get", Route = "customer/{partitionKey?}/{rowKey?}")] HttpRequest req,
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", "put", "delete", "get", Route = "customer/{partitionKey?}/{rowKey?}")] HttpRequest req,
         string partitionKey,
         string rowKey,
         ILogger log)
