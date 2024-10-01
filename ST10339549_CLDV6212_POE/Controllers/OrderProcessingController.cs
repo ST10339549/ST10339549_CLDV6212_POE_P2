@@ -1,43 +1,99 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using ST10339549_CLDV6212_POE.Models;
-using ST10339549_CLDV6212_POE.Services;
-using System;
+using System.Text;
 
 namespace ST10339549_CLDV6212_POE.Controllers
 {
     public class OrderProcessingController : Controller
     {
-        private readonly QueueStorageService _queueService;
+        private readonly HttpClient _httpClient;
+        private readonly string _azureFunctionBaseUrl;
+        private readonly string _orderQueueFunctionKey;
 
-        public OrderProcessingController()
+        // Inject HttpClient and configuration to retrieve Azure Function details
+        public OrderProcessingController(HttpClient httpClient, IConfiguration configuration)
         {
-            string connectionString = "DefaultEndpointsProtocol=https;AccountName=st10339549;AccountKey=2r3eN6egjj4zNt9nF8Bw2zMs7XwNBGnPcCiTgJG1jtDfATA+SeE8xYjqgCEdyFy9XMNHTiV1NPJw+AStGagjiw==;EndpointSuffix=core.windows.net";
-            _queueService = new QueueStorageService(connectionString);
+            _httpClient = httpClient;
+            _azureFunctionBaseUrl = configuration["AzureFunctionSettings:BaseUrl"];
+            _orderQueueFunctionKey = configuration["AzureFunctionSettings:OrderQueueFunctionKey"];
         }
 
         public async Task<IActionResult> Index()
         {
-            var messages = await _queueService.GetOrderMessagesAsync();
-            return View(messages);
+            // Call the Azure Function to get order messages from the queue
+            var getUrl = $"{_azureFunctionBaseUrl}/api/get-order-messages?code={_orderQueueFunctionKey}";
+            var response = await _httpClient.GetAsync(getUrl);
+            response.EnsureSuccessStatusCode();
+
+            var jsonResponse = await response.Content.ReadAsStringAsync();
+            var messages = JsonConvert.DeserializeObject<List<OrderMessage>>(jsonResponse);
+
+            return View(messages); // Pass messages to the view for display
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> OrderProcessing(string orderId, string productId, int quantity)
         {
-            if (!string.IsNullOrEmpty(orderId) && !string.IsNullOrEmpty(productId) && quantity > 0)
+            if (string.IsNullOrEmpty(orderId) || string.IsNullOrEmpty(productId) || quantity <= 0)
             {
-                var orderMessage = new OrderMessage
-                {
-                    OrderId = orderId,
-                    ProductId = productId,
-                    Quantity = quantity,
-                    Action = "processOrder",
-                    Timestamp = DateTime.UtcNow.ToString("o")
-                };
-
-                await _queueService.AddOrderMessageAsync(orderMessage);
+                TempData["Error"] = "Invalid order details. Please provide valid inputs.";
+                return RedirectToAction(nameof(Index));
             }
+
+            var orderMessage = new OrderMessage
+            {
+                OrderId = orderId,
+                ProductId = productId,
+                Quantity = quantity,
+                Action = "processOrder",
+                Timestamp = DateTime.UtcNow.ToString("o")
+            };
+
+            try
+            {
+                // Serialize order message and call Azure Function to add it to the queue
+                var messageJson = JsonConvert.SerializeObject(orderMessage);
+                var content = new StringContent(messageJson, Encoding.UTF8, "application/json");
+
+                var postUrl = $"{_azureFunctionBaseUrl}/api/add-order-message?code={_orderQueueFunctionKey}";
+                var response = await _httpClient.PostAsync(postUrl, content);
+                response.EnsureSuccessStatusCode();
+
+                TempData["Success"] = $"Order {orderId} for product {productId} added successfully!";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Failed to process the order: {ex.Message}";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteOrder(string messageId, string popReceipt)
+        {
+            if (string.IsNullOrEmpty(messageId) || string.IsNullOrEmpty(popReceipt))
+            {
+                TempData["Error"] = "Message ID or PopReceipt cannot be null.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            try
+            {
+                var deleteUrl = $"{_azureFunctionBaseUrl}/api/delete-order-message/{messageId}?popReceipt={popReceipt}&code={_orderQueueFunctionKey}";
+                var response = await _httpClient.DeleteAsync(deleteUrl);
+                response.EnsureSuccessStatusCode();
+
+                TempData["Success"] = $"Message with ID {messageId} was deleted successfully!";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Failed to delete the message: {ex.Message}";
+            }
+
             return RedirectToAction(nameof(Index));
         }
     }
