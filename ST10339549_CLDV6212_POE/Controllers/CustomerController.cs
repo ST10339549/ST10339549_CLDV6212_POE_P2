@@ -1,24 +1,21 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ST10339549_CLDV6212_POE.Models;
-using ST10339549_CLDV6212_POE.Services;
-using System.Threading.Tasks;
 
 namespace ST10339549_CLDV6212_POE.Controllers
 {
     public class CustomerController : Controller
     {
-        private readonly TableStorageService _tableStorageService;
+        private readonly HttpClient _httpClient;
+        private readonly string _azureFunctionUrl = "https://st10339549-azurefunctionapplication.azurewebsites.net/";
 
-        public CustomerController()
+        public CustomerController(HttpClient httpClient)
         {
-            string connectionString = "DefaultEndpointsProtocol=https;AccountName=st10339549;AccountKey=2r3eN6egjj4zNt9nF8Bw2zMs7XwNBGnPcCiTgJG1jtDfATA+SeE8xYjqgCEdyFy9XMNHTiV1NPJw+AStGagjiw==;EndpointSuffix=core.windows.net";
-
-            _tableStorageService = new TableStorageService(connectionString);
+            _httpClient = httpClient;
         }
 
         public async Task<IActionResult> Index()
         {
-            var customers = await _tableStorageService.GetCustomersAsync();
+            var customers = await _httpClient.GetFromJsonAsync<List<Customer>>($"{_azureFunctionUrl}GetCustomers");
             return View(customers);
         }
 
@@ -30,8 +27,15 @@ namespace ST10339549_CLDV6212_POE.Controllers
         {
             if (ModelState.IsValid)
             {
-                await _tableStorageService.AddCustomerAsync(customer);
-                return RedirectToAction(nameof(Index));
+                var response = await _httpClient.PostAsJsonAsync($"{_azureFunctionUrl}CustomerStorageFunction", customer);
+                if (response.IsSuccessStatusCode)
+                {
+                    return RedirectToAction(nameof(Index));
+                }
+                else
+                {
+                    ModelState.AddModelError("", "Failed to create customer.");
+                }
             }
             return View(customer);
         }
@@ -39,7 +43,7 @@ namespace ST10339549_CLDV6212_POE.Controllers
         [HttpGet]
         public async Task<IActionResult> Edit(string partitionKey, string rowKey)
         {
-            var customer = await _tableStorageService.GetCustomerAsync(partitionKey, rowKey);
+            var customer = await _httpClient.GetFromJsonAsync<Customer>($"{_azureFunctionUrl}GetCustomer?partitionKey={partitionKey}&rowKey={rowKey}");
             return View(customer);
         }
 
@@ -48,13 +52,12 @@ namespace ST10339549_CLDV6212_POE.Controllers
         {
             if (ModelState.IsValid)
             {
-                var existingCustomer = await _tableStorageService.GetCustomerAsync(customer.PartitionKey, customer.RowKey);
-                if (existingCustomer != null)
+                var response = await _httpClient.PutAsJsonAsync($"{_azureFunctionUrl}UpdateCustomer", customer);
+                if (response.IsSuccessStatusCode)
                 {
-                    customer.ETag = existingCustomer.ETag;
-                    await _tableStorageService.UpdateCustomerAsync(customer);
+                    return RedirectToAction(nameof(Index));
                 }
-                return RedirectToAction(nameof(Index));
+                ModelState.AddModelError("", "Failed to update customer.");
             }
             return View(customer);
         }
@@ -62,20 +65,20 @@ namespace ST10339549_CLDV6212_POE.Controllers
         [HttpGet]
         public async Task<IActionResult> Delete(string partitionKey, string rowKey)
         {
-            var customer = await _tableStorageService.GetCustomerAsync(partitionKey, rowKey);
+            var customer = await _httpClient.GetFromJsonAsync<Customer>($"{_azureFunctionUrl}GetCustomer?partitionKey={partitionKey}&rowKey={rowKey}");
             return View(customer);
         }
 
         [HttpPost]
         public async Task<IActionResult> Delete(Customer customer)
         {
-            var existingCustomer = await _tableStorageService.GetCustomerAsync(customer.PartitionKey, customer.RowKey);
-            if (existingCustomer != null)
+            var response = await _httpClient.DeleteAsync($"{_azureFunctionUrl}DeleteCustomer?partitionKey={customer.PartitionKey}&rowKey={customer.RowKey}");
+            if (response.IsSuccessStatusCode)
             {
-                customer.ETag = existingCustomer.ETag;
-                await _tableStorageService.DeleteCustomerAsync(customer);
+                return RedirectToAction(nameof(Index));
             }
-            return RedirectToAction(nameof(Index));
+            ModelState.AddModelError("", "Failed to delete customer.");
+            return View(customer);
         }
     }
 }

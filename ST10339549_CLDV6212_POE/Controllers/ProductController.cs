@@ -1,23 +1,21 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ST10339549_CLDV6212_POE.Models;
-using ST10339549_CLDV6212_POE.Services;
-using System.Threading.Tasks;
 
 namespace ST10339549_CLDV6212_POE.Controllers
 {
     public class ProductController : Controller
     {
-        private readonly TableStorageService _tableStorageService;
+        private readonly HttpClient _httpClient;
+        private readonly string _azureFunctionUrl = "https://st10339549-azurefunctionapplication.azurewebsites.net/";
 
-        public ProductController()
+        public ProductController(HttpClient httpClient)
         {
-            string connectionString = "DefaultEndpointsProtocol=https;AccountName=st10339549;AccountKey=2r3eN6egjj4zNt9nF8Bw2zMs7XwNBGnPcCiTgJG1jtDfATA+SeE8xYjqgCEdyFy9XMNHTiV1NPJw+AStGagjiw==;EndpointSuffix=core.windows.net";
-            _tableStorageService = new TableStorageService(connectionString);
+            _httpClient = httpClient;
         }
 
         public async Task<IActionResult> Index()
         {
-            var products = await _tableStorageService.GetProductsAsync();
+            var products = await _httpClient.GetFromJsonAsync<List<Product>>($"{_azureFunctionUrl}GetProducts");
             return View(products);
         }
 
@@ -25,13 +23,16 @@ namespace ST10339549_CLDV6212_POE.Controllers
         public IActionResult Create() => View();
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Product product)
         {
             if (ModelState.IsValid)
             {
-                await _tableStorageService.AddProductAsync(product);
-                return RedirectToAction(nameof(Index));
+                var response = await _httpClient.PostAsJsonAsync($"{_azureFunctionUrl}ProductStorageFunction", product);
+                if (response.IsSuccessStatusCode)
+                {
+                    return RedirectToAction(nameof(Index));
+                }
+                ModelState.AddModelError("", "Failed to create product.");
             }
             return View(product);
         }
@@ -39,28 +40,21 @@ namespace ST10339549_CLDV6212_POE.Controllers
         [HttpGet]
         public async Task<IActionResult> Edit(string partitionKey, string rowKey)
         {
-            var product = await _tableStorageService.GetProductAsync(partitionKey, rowKey);
-            if (product == null)
-            {
-                return NotFound();
-            }
+            var product = await _httpClient.GetFromJsonAsync<Product>($"{_azureFunctionUrl}GetProduct?partitionKey={partitionKey}&rowKey={rowKey}");
             return View(product);
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Product product)
         {
             if (ModelState.IsValid)
             {
-                var existingProduct = await _tableStorageService.GetProductAsync(product.PartitionKey, product.RowKey);
-                if (existingProduct != null)
+                var response = await _httpClient.PutAsJsonAsync($"{_azureFunctionUrl}UpdateProduct", product);
+                if (response.IsSuccessStatusCode)
                 {
-                    product.ETag = existingProduct.ETag;
-                    await _tableStorageService.UpdateProductAsync(product);
                     return RedirectToAction(nameof(Index));
                 }
-                return NotFound();
+                ModelState.AddModelError("", "Failed to update product.");
             }
             return View(product);
         }
@@ -68,24 +62,21 @@ namespace ST10339549_CLDV6212_POE.Controllers
         [HttpGet]
         public async Task<IActionResult> Delete(string partitionKey, string rowKey)
         {
-            var product = await _tableStorageService.GetProductAsync(partitionKey, rowKey);
-            if (product == null)
-            {
-                return NotFound();
-            }
+            var product = await _httpClient.GetFromJsonAsync<Product>($"{_azureFunctionUrl}GetProduct?partitionKey={partitionKey}&rowKey={rowKey}");
             return View(product);
         }
 
-        [HttpPost, ActionName("Delete")]
+        [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(string partitionKey, string rowKey)
         {
-            var product = await _tableStorageService.GetProductAsync(partitionKey, rowKey);
-            if (product != null)
+            var response = await _httpClient.DeleteAsync($"{_azureFunctionUrl}DeleteProduct?partitionKey={partitionKey}&rowKey={rowKey}");
+            if (response.IsSuccessStatusCode)
             {
-                await _tableStorageService.DeleteProductAsync(product);
+                return RedirectToAction(nameof(Index));
             }
-            return RedirectToAction(nameof(Index));
+            ModelState.AddModelError("", "Failed to delete product.");
+            return View();
         }
     }
 }
