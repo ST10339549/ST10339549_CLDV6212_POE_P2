@@ -5,16 +5,20 @@ namespace ST10339549_CLDV6212_POE.Controllers
     public class ImageUploadController : Controller
     {
         private readonly HttpClient _httpClient;
-        private readonly string _azureFunctionUrl = "https://st10339549-azurefunctionapplication.azurewebsites.net/";
+        private readonly IConfiguration _configuration;
+        private readonly string _baseUrl;
 
-        public ImageUploadController(HttpClient httpClient)
+        public ImageUploadController(HttpClient httpClient, IConfiguration configuration)
         {
             _httpClient = httpClient;
+            _configuration = configuration;
+            _baseUrl = _configuration["AzureFunctionSettings:BaseUrl"];
         }
 
         public async Task<IActionResult> Index()
         {
-            var images = await _httpClient.GetFromJsonAsync<List<string>>($"{_azureFunctionUrl}api/list-images");
+            string functionKey = _configuration["AzureFunctionSettings:ListImagesFunctionKey"];
+            var images = await _httpClient.GetFromJsonAsync<List<string>>($"{_baseUrl}api/list-images?code={functionKey}");
             return View(images);
         }
 
@@ -27,7 +31,8 @@ namespace ST10339549_CLDV6212_POE.Controllers
                 using var fileStream = image.OpenReadStream();
                 form.Add(new StreamContent(fileStream), "file", image.FileName);
 
-                var response = await _httpClient.PostAsync($"{_azureFunctionUrl}api/upload-image", form);
+                string functionKey = _configuration["AzureFunctionSettings:UploadImageFunctionKey"];
+                var response = await _httpClient.PostAsync($"{_baseUrl}api/upload-image?code={functionKey}", form);
                 if (response.IsSuccessStatusCode)
                 {
                     TempData["Message"] = "Image uploaded successfully!";
