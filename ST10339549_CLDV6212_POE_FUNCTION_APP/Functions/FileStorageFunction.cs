@@ -67,7 +67,7 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
 
         [FunctionName("GetFileUrls")]
         public async Task<IActionResult> GetFileUrls(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "get-file-urls")] ILogger log)
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "get-file-urls")] HttpRequest req, ILogger log)
         {
             log.LogInformation("Fetching file URLs from Azure File Share.");
 
