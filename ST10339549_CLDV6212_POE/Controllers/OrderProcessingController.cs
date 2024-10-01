@@ -19,19 +19,36 @@ namespace ST10339549_CLDV6212_POE.Controllers
             _orderQueueFunctionKey = configuration["AzureFunctionSettings:OrderQueueFunctionKey"];
         }
 
+        // Fetch and display all order messages from the Azure Queue
         public async Task<IActionResult> Index()
         {
-            // Call the Azure Function to get order messages from the queue
-            var getUrl = $"{_azureFunctionBaseUrl}/api/get-order-messages?code={_orderQueueFunctionKey}";
-            var response = await _httpClient.GetAsync(getUrl);
-            response.EnsureSuccessStatusCode();
+            try
+            {
+                // URL for getting order messages
+                var getUrl = $"{_azureFunctionBaseUrl}api/get-order-messages?code={_orderQueueFunctionKey}";
 
-            var jsonResponse = await response.Content.ReadAsStringAsync();
-            var messages = JsonConvert.DeserializeObject<List<OrderMessage>>(jsonResponse);
+                var response = await _httpClient.GetAsync(getUrl);
 
-            return View(messages); // Pass messages to the view for display
+                if (!response.IsSuccessStatusCode)
+                {
+                    TempData["Error"] = "Failed to retrieve order messages.";
+                    return View(new List<OrderMessage>());
+                }
+
+                // Deserialize the response into a list of order messages
+                var jsonResponse = await response.Content.ReadAsStringAsync();
+                var messages = JsonConvert.DeserializeObject<List<OrderMessage>>(jsonResponse);
+
+                return View(messages); // Pass the messages to the view
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Error fetching messages: {ex.Message}";
+                return View(new List<OrderMessage>());
+            }
         }
 
+        // Add a new order message to the Azure Queue
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> OrderProcessing(string orderId, string productId, int quantity)
@@ -53,15 +70,22 @@ namespace ST10339549_CLDV6212_POE.Controllers
 
             try
             {
-                // Serialize order message and call Azure Function to add it to the queue
+                // Serialize the order message into JSON
                 var messageJson = JsonConvert.SerializeObject(orderMessage);
                 var content = new StringContent(messageJson, Encoding.UTF8, "application/json");
 
-                var postUrl = $"{_azureFunctionBaseUrl}/api/add-order-message?code={_orderQueueFunctionKey}";
+                // URL for adding an order message
+                var postUrl = $"{_azureFunctionBaseUrl}api/add-order-message?code={_orderQueueFunctionKey}";
                 var response = await _httpClient.PostAsync(postUrl, content);
-                response.EnsureSuccessStatusCode();
 
-                TempData["Success"] = $"Order {orderId} for product {productId} added successfully!";
+                if (response.IsSuccessStatusCode)
+                {
+                    TempData["Success"] = $"Order {orderId} for product {productId} added successfully!";
+                }
+                else
+                {
+                    TempData["Error"] = "Failed to add the order message.";
+                }
             }
             catch (Exception ex)
             {
@@ -71,6 +95,7 @@ namespace ST10339549_CLDV6212_POE.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // Delete an order message from the Azure Queue
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteOrder(string messageId, string popReceipt)
@@ -83,11 +108,18 @@ namespace ST10339549_CLDV6212_POE.Controllers
 
             try
             {
-                var deleteUrl = $"{_azureFunctionBaseUrl}/api/delete-order-message/{messageId}?popReceipt={popReceipt}&code={_orderQueueFunctionKey}";
+                // URL for deleting the order message
+                var deleteUrl = $"{_azureFunctionBaseUrl}api/delete-order-message/{messageId}?popReceipt={popReceipt}&code={_orderQueueFunctionKey}";
                 var response = await _httpClient.DeleteAsync(deleteUrl);
-                response.EnsureSuccessStatusCode();
 
-                TempData["Success"] = $"Message with ID {messageId} was deleted successfully!";
+                if (response.IsSuccessStatusCode)
+                {
+                    TempData["Success"] = $"Message with ID {messageId} was deleted successfully!";
+                }
+                else
+                {
+                    TempData["Error"] = "Failed to delete the order message.";
+                }
             }
             catch (Exception ex)
             {
