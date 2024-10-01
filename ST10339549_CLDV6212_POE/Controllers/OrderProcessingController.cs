@@ -10,6 +10,8 @@ namespace ST10339549_CLDV6212_POE.Controllers
         private readonly HttpClient _httpClient;
         private readonly string _azureFunctionBaseUrl;
         private readonly string _orderQueueFunctionKey;
+        private readonly string _getOrderQueueFunctionKey;
+
 
         // Inject HttpClient and configuration to retrieve Azure Function details
         public OrderProcessingController(HttpClient httpClient, IConfiguration configuration)
@@ -17,6 +19,7 @@ namespace ST10339549_CLDV6212_POE.Controllers
             _httpClient = httpClient;
             _azureFunctionBaseUrl = configuration["AzureFunctionSettings:BaseUrl"];
             _orderQueueFunctionKey = configuration["AzureFunctionSettings:OrderQueueFunctionKey"];
+            _getOrderQueueFunctionKey = configuration["AzureFunctionSettings:GetOrderFunctionKey"];
         }
 
         // Fetch and display all order messages from the Azure Queue
@@ -75,7 +78,7 @@ namespace ST10339549_CLDV6212_POE.Controllers
                 var content = new StringContent(messageJson, Encoding.UTF8, "application/json");
 
                 // URL for adding an order message
-                var postUrl = $"{_azureFunctionBaseUrl}api/add-order-message?code={_orderQueueFunctionKey}";
+                var postUrl = $"{_azureFunctionBaseUrl}api/add-order-message?code={_getOrderQueueFunctionKey}";
                 var response = await _httpClient.PostAsync(postUrl, content);
 
                 if (response.IsSuccessStatusCode)
