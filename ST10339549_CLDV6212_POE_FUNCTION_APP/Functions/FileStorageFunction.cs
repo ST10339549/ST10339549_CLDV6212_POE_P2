@@ -5,6 +5,7 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
@@ -62,6 +63,24 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
             await fileClient.DeleteIfExistsAsync();
 
             return new OkObjectResult($"File '{fileName}' deleted successfully.");
+        }
+
+        [FunctionName("GetFileUrls")]
+        public async Task<IActionResult> GetFileUrls(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "get-file-urls")] ILogger log)
+        {
+            log.LogInformation("Fetching file URLs from Azure File Share.");
+
+            var directory = _shareClient.GetRootDirectoryClient();
+            var fileUrls = new List<string>();
+
+            await foreach (var item in directory.GetFilesAndDirectoriesAsync())
+            {
+                var fileUrl = $"{_shareClient.Uri}/{item.Name}";
+                fileUrls.Add(fileUrl);
+            }
+
+            return new OkObjectResult(fileUrls);
         }
     }
 }

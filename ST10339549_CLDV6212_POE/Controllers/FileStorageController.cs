@@ -7,14 +7,16 @@ namespace ST10339549_CLDV6212_POE.Controllers
     {
         private readonly HttpClient _httpClient;
         private readonly string _azureFunctionBaseUrl;
-        private readonly string _functionKey;
+        private readonly string _fileUploadFunctionKey;
+        private readonly string _fileDeleteFunctionKey;
 
         // Inject IConfiguration to retrieve Azure Function details from appsettings.json
         public FileStorageController(HttpClient httpClient, IConfiguration configuration)
         {
             _httpClient = httpClient;
             _azureFunctionBaseUrl = configuration["AzureFunctionSettings:BaseUrl"];
-            _functionKey = configuration["AzureFunctionSettings:FileStorageFunctionKey"];
+            _fileUploadFunctionKey = configuration["AzureFunctionSettings:UploadFileFunctionKey"];
+            _fileDeleteFunctionKey = configuration["AzureFunctionSettings:DeleteFileFunctionKey"];
         }
 
         // Display all files from Azure File Storage
@@ -31,7 +33,7 @@ namespace ST10339549_CLDV6212_POE.Controllers
         {
             if (formFile != null && formFile.Length > 0)
             {
-                var uploadUrl = $"{_azureFunctionBaseUrl}api/upload-file?code={_functionKey}";
+                var uploadUrl = $"{_azureFunctionBaseUrl}api/upload-file?code={_fileUploadFunctionKey}";
                 var formFileName = formFile.FileName;
 
                 using (var stream = formFile.OpenReadStream())
@@ -61,7 +63,7 @@ namespace ST10339549_CLDV6212_POE.Controllers
         {
             if (!string.IsNullOrEmpty(fileName))
             {
-                var deleteUrl = $"{_azureFunctionBaseUrl}api/delete-file/{fileName}?code={_functionKey}";
+                var deleteUrl = $"{_azureFunctionBaseUrl}api/delete-file/{fileName}?code={_fileDeleteFunctionKey}";
                 var response = await _httpClient.DeleteAsync(deleteUrl);
                 response.EnsureSuccessStatusCode();
 
