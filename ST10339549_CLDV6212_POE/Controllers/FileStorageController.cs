@@ -9,6 +9,7 @@ namespace ST10339549_CLDV6212_POE.Controllers
         private readonly string _azureFunctionBaseUrl;
         private readonly string _fileUploadFunctionKey;
         private readonly string _fileDeleteFunctionKey;
+        private readonly string _fileGetFunctionKey;
 
         // Inject IConfiguration to retrieve Azure Function details from appsettings.json
         public FileStorageController(HttpClient httpClient, IConfiguration configuration)
@@ -17,6 +18,7 @@ namespace ST10339549_CLDV6212_POE.Controllers
             _azureFunctionBaseUrl = configuration["AzureFunctionSettings:BaseUrl"];
             _fileUploadFunctionKey = configuration["AzureFunctionSettings:UploadFileFunctionKey"];
             _fileDeleteFunctionKey = configuration["AzureFunctionSettings:DeleteFileFunctionKey"];
+            _fileGetFunctionKey = configuration["AzureFunctionSettings:GetFileFunctionKey"];
         }
 
         // Display all files from Azure File Storage
@@ -80,7 +82,7 @@ namespace ST10339549_CLDV6212_POE.Controllers
         // Helper method to fetch the list of file URLs from Azure Function
         public async Task<List<string>> GetFileUrlsAsync()
         {
-            var getUrl = $"{_azureFunctionBaseUrl}api/get-file-urls?code={_fileUploadFunctionKey}";
+            var getUrl = $"{_azureFunctionBaseUrl}api/get-file-urls?code={_fileGetFunctionKey}";
             var response = await _httpClient.GetAsync(getUrl);
             response.EnsureSuccessStatusCode();
 
