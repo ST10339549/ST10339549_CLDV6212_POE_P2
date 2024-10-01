@@ -80,7 +80,7 @@ namespace ST10339549_CLDV6212_POE.Controllers
         // Helper method to fetch the list of file URLs from Azure Function
         public async Task<List<string>> GetFileUrlsAsync()
         {
-            var getUrl = $"{_azureFunctionBaseUrl}api/get-file-urls?code={_functionKey}";
+            var getUrl = $"{_azureFunctionBaseUrl}api/get-file-urls?code={_fileUploadFunctionKey}";
             var response = await _httpClient.GetAsync(getUrl);
             response.EnsureSuccessStatusCode();
 
