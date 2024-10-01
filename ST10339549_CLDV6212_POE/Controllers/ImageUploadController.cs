@@ -5,20 +5,22 @@ namespace ST10339549_CLDV6212_POE.Controllers
     public class ImageUploadController : Controller
     {
         private readonly HttpClient _httpClient;
-        private readonly IConfiguration _configuration;
-        private readonly string _baseUrl;
+        private readonly string _azureFunctionUrl;
+        private readonly string _ListImagesFunctionKey;
+        private readonly string _UploadImageFunctionKey;
 
         public ImageUploadController(HttpClient httpClient, IConfiguration configuration)
         {
             _httpClient = httpClient;
-            _configuration = configuration;
-            _baseUrl = _configuration["AzureFunctionSettings:BaseUrl"];
+            _azureFunctionUrl = configuration["AzureFunctionSettings:BaseUrl"];
+            _ListImagesFunctionKey = configuration["AzureFunctionSettings:ListImagesFunctionKey"];
+            _UploadImageFunctionKey = configuration["AzureFunctionSettings:UploadImageFunctionKey"];
+
         }
 
         public async Task<IActionResult> Index()
         {
-            string functionKey = _configuration["AzureFunctionSettings:ListImagesFunctionKey"];
-            var images = await _httpClient.GetFromJsonAsync<List<string>>($"{_baseUrl}api/list-images?code={functionKey}");
+            var images = await _httpClient.GetFromJsonAsync<List<string>>($"{_azureFunctionUrl}api/list-images?code={_ListImagesFunctionKey}");
             return View(images);
         }
 
@@ -31,8 +33,7 @@ namespace ST10339549_CLDV6212_POE.Controllers
                 using var fileStream = image.OpenReadStream();
                 form.Add(new StreamContent(fileStream), "file", image.FileName);
 
-                string functionKey = _configuration["AzureFunctionSettings:UploadImageFunctionKey"];
-                var response = await _httpClient.PostAsync($"{_baseUrl}api/upload-image?code={functionKey}", form);
+                var response = await _httpClient.PostAsync($"{_azureFunctionUrl}api/upload-image?code={_UploadImageFunctionKey}", form);
                 if (response.IsSuccessStatusCode)
                 {
                     TempData["Message"] = "Image uploaded successfully!";

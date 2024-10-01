@@ -12,7 +12,7 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
 {
     public static class BlobStorageFunction
     {
-        private static readonly string connectionString = Environment.GetEnvironmentVariable("AzureBlobStorageConnectionString");
+        private static readonly string connectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage");
         private static readonly string containerName = "images";
 
         [FunctionName("UploadImageFunction")]
@@ -22,23 +22,38 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
         {
             log.LogInformation("C# HTTP trigger function to upload an image.");
 
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                log.LogError("Azure Blob Storage connection string is not configured.");
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+            }
+
             var file = req.Form.Files["file"];
             if (file == null || file.Length == 0)
             {
                 return new BadRequestObjectResult("Please upload a file.");
             }
 
-            var blobServiceClient = new BlobServiceClient(connectionString);
-            var blobContainerClient = blobServiceClient.GetBlobContainerClient(containerName);
-            await blobContainerClient.CreateIfNotExistsAsync();
-
-            var blobClient = blobContainerClient.GetBlobClient(file.FileName);
-            using (var stream = file.OpenReadStream())
+            try
             {
-                await blobClient.UploadAsync(stream, overwrite: true);
-            }
+                var blobServiceClient = new BlobServiceClient(connectionString);
+                log.LogInformation($"Connection string used: {connectionString}");
+                var blobContainerClient = blobServiceClient.GetBlobContainerClient(containerName);
+                await blobContainerClient.CreateIfNotExistsAsync();
 
-            return new OkObjectResult($"File uploaded successfully: {blobClient.Uri}");
+                var blobClient = blobContainerClient.GetBlobClient(file.FileName);
+                using (var stream = file.OpenReadStream())
+                {
+                    await blobClient.UploadAsync(stream, overwrite: true);
+                }
+
+                return new OkObjectResult($"File uploaded successfully: {blobClient.Uri}");
+            }
+            catch (Exception ex)
+            {
+                log.LogError($"Error uploading image: {ex.Message}");
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+            }
         }
 
         [FunctionName("ListImagesFunction")]
@@ -48,17 +63,32 @@ namespace ST10339549_CLDV6212_POE_FUNCTION_APP.Functions
         {
             log.LogInformation("C# HTTP trigger function to list images.");
 
-            var blobServiceClient = new BlobServiceClient(connectionString);
-            var blobContainerClient = blobServiceClient.GetBlobContainerClient(containerName);
-            await blobContainerClient.CreateIfNotExistsAsync();
-
-            var images = new List<string>();
-            await foreach (var blobItem in blobContainerClient.GetBlobsAsync())
+            if (string.IsNullOrEmpty(connectionString))
             {
-                images.Add(blobContainerClient.GetBlobClient(blobItem.Name).Uri.ToString());
+                log.LogError("Azure Blob Storage connection string is not configured.");
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
             }
 
-            return new OkObjectResult(images);
+            try
+            {
+                var blobServiceClient = new BlobServiceClient(connectionString);
+                log.LogInformation($"Connection string used: {connectionString}");
+                var blobContainerClient = blobServiceClient.GetBlobContainerClient(containerName);
+                await blobContainerClient.CreateIfNotExistsAsync();
+
+                var images = new List<string>();
+                await foreach (var blobItem in blobContainerClient.GetBlobsAsync())
+                {
+                    images.Add(blobContainerClient.GetBlobClient(blobItem.Name).Uri.ToString());
+                }
+
+                return new OkObjectResult(images);
+            }
+            catch (Exception ex)
+            {
+                log.LogError($"Error listing images: {ex.Message}");
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+            }
         }
     }
 }
